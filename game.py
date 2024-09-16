@@ -29,6 +29,7 @@ SPEED = 800
 class SnakeGameAI:
 
     def __init__(self, w=640, h=480):
+        self.previous_distance_to_food = 0
         self.w = w
         self.h = h
         # init display
@@ -41,18 +42,27 @@ class SnakeGameAI:
         board_width = self.w // BLOCK_SIZE
         board_height = self.h // BLOCK_SIZE
         game_board = [[0 for _ in range(board_height)] for _ in range(board_width)]
+  
+        # this was quite bad, it was marking the walls as -1, but the snake was marked as -0.5
+        # # Mark the walls on the board with value -1
+        # for i in range(board_width):
+        #     game_board[i][0] = -1
+        #     game_board[i][board_height - 1] = -1
+        # for i in range(board_height):
+        #     game_board[0][i] = -1
+        #     game_board[board_width - 1][i] = -1
 
         # Mark the snake on the board
         for point in self.snake:
             x = int(point.x // BLOCK_SIZE) - 1
             y = int(point.y // BLOCK_SIZE) - 1
-            game_board[x][y] = 1  # 1 indicates snake
+            game_board[x][y] = -1.  # 1 indicates snake
 
         # Mark the food on the board
         if self.food:
             food_x = int(self.food.x // BLOCK_SIZE) - 1
             food_y = int(self.food.y // BLOCK_SIZE) - 1
-            game_board[food_x][food_y] = 2  # 2 indicates food
+            game_board[food_x][food_y] = 1  # 2 indicates food
 
         return game_board
 
@@ -94,7 +104,7 @@ class SnakeGameAI:
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 100*len(self.snake):
+        if self.is_collision() or self.frame_iteration > 200*len(self.snake):
             game_over = True
             reward = -10
             return reward, game_over, self.score
@@ -102,10 +112,31 @@ class SnakeGameAI:
         # 4. place new food or just move
         if self.head == self.food:
             self.score += 1
-            reward = 10
+            reward = 50
             self._place_food()
         else:
             self.snake.pop()
+        
+        # Additional reward/penalty logic
+        # Penalize for spinning in circles
+        if self.frame_iteration > 1:
+            if self.snake[0].x == self.snake[2].x and self.snake[0].y == self.snake[2].y:
+                reward -= 5
+
+        # Calculate distance to food
+        distance_to_food = abs(self.head.x - self.food.x) + abs(self.head.y - self.food.y)
+
+        # Reward for moving closer to food
+        if distance_to_food < self.previous_distance_to_food:
+            reward += 30
+        else:
+            reward -= 1
+
+        # Small reward for each step survived
+        reward += 0.1
+
+        # Update previous distance to food
+        self.previous_distance_to_food = distance_to_food
         
         # 5. update ui and clock
         self._update_ui()

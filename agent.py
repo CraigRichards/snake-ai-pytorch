@@ -6,18 +6,19 @@ from game import SnakeGameAI, Direction, Point
 from model import Linear_QNet, QTrainer
 from helper import plot
 
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
-LR = 0.001
+MAX_MEMORY = 1_000_000_000
+BATCH_SIZE = 2000
+LR = 0.0001
 
 class Agent:
 
     def __init__(self):
         self.n_games = 0
-        self.epsilon = 0 # randomness
-        self.gamma = 0.9 # discount rate
+        self.epsilon = 0.4 # randomness
+        self.gamma = 0.3 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(11, 256, 3).to('cuda')
+        self.model = Linear_QNet(776, 776, 3).to('cuda')
+        self.model.load()
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
@@ -37,23 +38,23 @@ class Agent:
         dir_d = game.direction == Direction.DOWN
 
         state = [
-            # Danger straight
-            (dir_r and game.is_collision(point_r)) or 
-            (dir_l and game.is_collision(point_l)) or 
-            (dir_u and game.is_collision(point_u)) or 
-            (dir_d and game.is_collision(point_d)),
+            # # Danger straight
+            # (dir_r and game.is_collision(point_r)) or 
+            # (dir_l and game.is_collision(point_l)) or 
+            # (dir_u and game.is_collision(point_u)) or 
+            # (dir_d and game.is_collision(point_d)),
 
-            # Danger right
-            (dir_u and game.is_collision(point_r)) or 
-            (dir_d and game.is_collision(point_l)) or 
-            (dir_l and game.is_collision(point_u)) or 
-            (dir_r and game.is_collision(point_d)),
+            # # Danger right
+            # (dir_u and game.is_collision(point_r)) or 
+            # (dir_d and game.is_collision(point_l)) or 
+            # (dir_l and game.is_collision(point_u)) or 
+            # (dir_r and game.is_collision(point_d)),
 
-            # Danger left
-            (dir_d and game.is_collision(point_r)) or 
-            (dir_u and game.is_collision(point_l)) or 
-            (dir_r and game.is_collision(point_u)) or 
-            (dir_l and game.is_collision(point_d)),
+            # # Danger left
+            # (dir_d and game.is_collision(point_r)) or 
+            # (dir_u and game.is_collision(point_l)) or 
+            # (dir_r and game.is_collision(point_u)) or 
+            # (dir_l and game.is_collision(point_d)),
             
             # Move direction
             dir_l,
@@ -66,7 +67,9 @@ class Agent:
             game.food.x > game.head.x,  # food right
             game.food.y < game.head.y,  # food up
             game.food.y > game.head.y  # food down
-            ]
+        ]
+        
+        state.extend(np.array(game.get_game_board_state()).flatten())
 
         return np.array(state, dtype=int)
 
