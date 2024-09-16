@@ -24,7 +24,7 @@ BLUE2 = (0, 100, 255)
 BLACK = (0,0,0)
 
 BLOCK_SIZE = 20
-SPEED = 40
+SPEED = 800
 
 class SnakeGameAI:
 
@@ -37,6 +37,24 @@ class SnakeGameAI:
         self.clock = pygame.time.Clock()
         self.reset()
 
+    def get_game_board_state(self):
+        board_width = self.w // BLOCK_SIZE
+        board_height = self.h // BLOCK_SIZE
+        game_board = [[0 for _ in range(board_height)] for _ in range(board_width)]
+
+        # Mark the snake on the board
+        for point in self.snake:
+            x = int(point.x // BLOCK_SIZE) - 1
+            y = int(point.y // BLOCK_SIZE) - 1
+            game_board[x][y] = 1  # 1 indicates snake
+
+        # Mark the food on the board
+        if self.food:
+            food_x = int(self.food.x // BLOCK_SIZE) - 1
+            food_y = int(self.food.y // BLOCK_SIZE) - 1
+            game_board[food_x][food_y] = 2  # 2 indicates food
+
+        return game_board
 
     def reset(self):
         # init game state
